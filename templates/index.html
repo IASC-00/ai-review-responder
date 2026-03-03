@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Review Responder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --border: #e3dfd8;
+  --text: #1a1814;
+  --dim: #7a7570;
+  --accent: #2563eb;
+  --accent-bg: #eff6ff;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --amber: #d97706;
+  --amber-bg: #fffbeb;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+}
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo { font-size: 13px; font-weight: 600; color: var(--text); text-decoration: none; }
+.back { font-size: 12px; color: var(--dim); text-decoration: none; }
+.back:hover { color: var(--text); }
+
+.page { max-width: 700px; margin: 0 auto; padding: 48px 24px 80px; }
+
+.page-header { margin-bottom: 36px; }
+.page-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+.page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+.page-header p { font-size: 13.5px; color: var(--dim); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+label { display: block; font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 7px; }
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+textarea { resize: vertical; }
+
+.form-row { margin-bottom: 20px; }
+.form-row:last-child { margin-bottom: 0; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+.char-count { font-size: 11px; color: var(--dim); margin-top: 5px; text-align: right; }
+
+.stars { display: flex; gap: 6px; margin-bottom: 20px; }
+.star-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--dim);
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.star-btn:hover { border-color: var(--accent); color: var(--text); }
+.star-btn.active-pos { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.star-btn.active-neg { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+.star-btn.active-mix { border-color: var(--amber); background: var(--amber-bg); color: var(--amber); }
+
+.tone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.tone-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--dim);
+  transition: all .15s;
+  text-align: center;
+}
+.tone-btn:hover { border-color: var(--accent); color: var(--text); }
+.tone-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+
+.submit-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.submit-btn:hover { opacity: .85; }
+.submit-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* OUTPUT */
+#output { display: none; }
+
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+.result-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--dim);
+  margin-bottom: 12px;
+}
+
+.reply-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+}
+
+.meta-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.tip-box {
+  background: var(--amber-bg);
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #92400e;
+}
+.tip-box strong { font-weight: 600; }
+
+.demo-note {
+  background: var(--accent-bg);
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12.5px;
+  color: #1e40af;
+  margin-bottom: 16px;
+}
+
+.copy-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--dim);
+  transition: all .15s;
+}
+.copy-btn:hover { border-color: var(--text); color: var(--text); }
+.copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+.try-again-btn {
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+  margin-left: 8px;
+}
+.try-again-btn:hover { opacity: .85; }
+
+.spinner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: var(--dim);
+  font-size: 13px;
+}
+.spinner.active { display: flex; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.dot:nth-child(2) { animation-delay: .2s; }
+.dot:nth-child(3) { animation-delay: .4s; }
+@keyframes pulse { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+
+.attribution {
+  text-align: center;
+  font-size: 12px;
+  color: var(--dim);
+  margin-top: 40px;
+}
+.attribution a { color: var(--dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="https://iswain.dev" class="logo">iswain.dev</a>
+  <a href="https://iswain.dev" class="back">← back to portfolio</a>
+</header>
+
+<div class="page">
+
+  <div class="page-header">
+    <p class="page-label">Free Tool</p>
+    <h1>AI Review Responder</h1>
+    <p>Paste any customer review and get a professional, human-sounding reply in seconds.</p>
+  </div>
+
+  <!-- FORM -->
+  <div id="form-section">
+    <div class="card">
+
+      <div class="form-grid">
+        <div>
+          <label>Business Name</label>
+          <input type="text" id="business-name" placeholder="e.g. Harbor Coffee Co.">
+        </div>
+        <div>
+          <label>Business Type <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" id="business-type" placeholder="e.g. coffee shop, salon, gym">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Paste the Review</label>
+        <textarea id="review-text" rows="5" placeholder="Paste the customer review here..."></textarea>
+        <div class="char-count"><span id="char-count">0</span> characters</div>
+      </div>
+
+      <div class="form-row">
+        <label>Reply Tone</label>
+        <div class="tone-grid">
+          <button class="tone-btn active" data-tone="professional">Professional</button>
+          <button class="tone-btn" data-tone="warm and personal">Warm &amp; Personal</button>
+          <button class="tone-btn" data-tone="friendly and casual">Friendly &amp; Casual</button>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="generateReply()">Generate Reply</button>
+
+      <div class="spinner" id="spinner">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <span>Writing your reply...</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output">
+    <div class="result-card">
+      <div class="result-label">Your Reply</div>
+
+      <div id="demo-note" class="demo-note" style="display:none">
+        Demo mode — add your Anthropic API key to get AI-generated replies tailored to your exact review.
+      </div>
+
+      <div class="reply-text" id="reply-text"></div>
+
+      <div class="meta-row">
+        <span class="meta-chip" id="tone-chip"></span>
+      </div>
+
+      <div class="tip-box" id="tip-box"></div>
+
+      <div style="margin-top:16px;">
+        <button class="copy-btn" id="copy-btn" onclick="copyReply()">Copy Reply</button>
+        <button class="try-again-btn" onclick="resetForm()">Try Another</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="attribution">
+    Built by <a href="https://iswain.dev">Ian Swain</a> &mdash; <a href="https://iswain.dev#contact">hire me to build this for your business</a>
+  </div>
+
+</div>
+
+<script>
+let selectedTone = 'professional';
+
+document.querySelectorAll('.tone-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedTone = btn.dataset.tone;
+  });
+});
+
+document.getElementById('review-text').addEventListener('input', function() {
+  document.getElementById('char-count').textContent = this.value.length;
+});
+
+async function generateReply() {
+  const review = document.getElementById('review-text').value.trim();
+  const businessName = document.getElementById('business-name').value.trim();
+  const businessType = document.getElementById('business-type').value.trim();
+
+  if (!review) {
+    document.getElementById('review-text').focus();
+    return;
+  }
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('spinner').classList.add('active');
+
+  try {
+    const res = await fetch('/generate-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ review, business_name: businessName, business_type: businessType, tone: selectedTone })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert('Error: ' + data.error);
+      return;
+    }
+
+    document.getElementById('reply-text').textContent = data.reply;
+    document.getElementById('tone-chip').textContent = '✦ ' + data.tone;
+    document.getElementById('tip-box').innerHTML = '<strong>Tip:</strong> ' + data.tip;
+    document.getElementById('demo-note').style.display = data.is_demo ? 'block' : 'none';
+
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('output').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (e) {
+    alert('Something went wrong. Please try again.');
+  } finally {
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('spinner').classList.remove('active');
+  }
+}
+
+function copyReply() {
+  const text = document.getElementById('reply-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Reply'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function resetForm() {
+  document.getElementById('output').style.display = 'none';
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('review-text').value = '';
+  document.getElementById('char-count').textContent = '0';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
